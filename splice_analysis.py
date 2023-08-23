@@ -178,8 +178,8 @@ headers = [
     "5' Splicing Efficiency (%)",
     "3' Splicing Efficiency (%)"
 ]
-
-print(tabulate(formatted_data, headers=headers, tablefmt="pretty"))
+#
+# print(tabulate(formatted_data, headers=headers, tablefmt="pretty"))
 # print(formatted_data)
 
 
@@ -215,10 +215,8 @@ grouped_5prime = df5.groupby("5' End").agg({
 grouped_5prime["Total Unspliced"] = grouped_5prime["5' Unspliced"] - grouped_5prime["5' Boundary"]
 
 # Print the compositional analysis for the 5' side
-print("5' Side Compositional Analysis:")
-print(grouped_5prime)
-
-
+# print("5' Side Compositional Analysis:")
+# print(grouped_5prime)
 
 # Filter out rows with the intron value (226, 3357)
 df_filtered = df[df["Start"] != (226, 3357)].copy()  # Make a copy of the filtered DataFrame
@@ -242,6 +240,46 @@ grouped_3prime = df_filtered.groupby("3' End").agg({
 # Step 2: Calculate the total unspliced for 3' side
 grouped_3prime["Total Unspliced"] = grouped_3prime["3' Unspliced"] - grouped_3prime["3' Boundary"]
 
-# Print the compositional analysis for the filtered 3' side
-print("Filtered 3' Side Compositional Analysis:")
-print(grouped_3prime)
+# Print the compositional analysis for the 3' side
+# print("Filtered 3' Side Compositional Analysis:")
+# print(grouped_3prime)
+
+
+# Calculate the sum of "Total Unspliced" values for both sides
+# This has to be added to the splice support values that combine to make the denominator for the compositional analysis
+total_unspliced = grouped_5prime["Total Unspliced"].sum() + grouped_3prime["Total Unspliced"].sum()
+
+print("Total Unspliced:", total_unspliced)
+
+
+# Now calculate the sum of all the splice_support values
+total_splice_support = df['Splice Support'].sum()
+print("Total Splice Support:", total_splice_support)
+
+combined_denominator = total_splice_support + total_unspliced
+print("Combined Denominator:", combined_denominator)
+
+# Calculate and update the splicing efficiency for each row in the DataFrame
+df['Splicing Efficiency'] = df['Splice Support'] / combined_denominator
+
+# # Print the updated DataFrame
+# print("Updated DataFrame:")
+# print(df)
+
+# Select the desired columns from the DataFrame
+desired_columns = [
+    'Start', 'Splice Support', '5\' Unspliced', '3\' Unspliced',
+    '5\' Boundary', '3\' Boundary', 'Splicing Efficiency'
+]
+selected_data = df[desired_columns]
+
+# Multiply the splicing efficiency values by 100 to represent them as percentages
+selected_data['Splicing Efficiency'] = selected_data['Splicing Efficiency'] * 100
+
+# Print the selected data
+print(selected_data)
+
+# Sum all values in the "Splicing Efficiency" column
+total_splicing_efficiency = selected_data['Splicing Efficiency'].sum()
+# Print the total splicing efficiency
+print("Total Splicing Efficiency:", total_splicing_efficiency)
