@@ -27,6 +27,7 @@ def calculate_splicing_efficiency(bam_file):
         non_splice_support = 0
 
         # Loop through each read in the BAM file
+        # Bin reads into exons or introns depending on they cigar string attributes
         for read in all_reads:
             # Initialize variablesa
             exonic_length = 0
@@ -40,9 +41,9 @@ def calculate_splicing_efficiency(bam_file):
                 elif op == 3:
                     spliced_length += length
 
-            ###THIS CALCULATES THE SPLICE SUPPORT READS
-            ###CONFIRMED BY BAM FILE EXAMINATION THAT THIS IS CALCULATING CORRECTLY
-            ###USES THE SPLUCED LENGTH VAR WHICH CONTAINS READS WITH CIGAR STRINGS "N"
+
+            # Calculates the reads that are supporting splice
+            # Uses the splice length variable which contains the cigar strings with "N"
             if spliced_length > 0:
                 running_over = [t for t in intron_regions if
                                 read.reference_start < t[0] + 3 and read.reference_end > t[1] - 3]
@@ -53,8 +54,10 @@ def calculate_splicing_efficiency(bam_file):
                             myintrons[t]["splice_support"] += 1
                     splice_support += 1
 
-            ###THIS CALCULATES THE FIVE AND THREE PRIME UNSPLICED READS AND BOUNDARY READS
-            ###CANNOT TELL IF BOUNDARY READS ARE SPLICED/UNSPLICED, THEREFORE MUST SUBTRACTED FROM UNSPLICED (?)
+
+
+            # Calculates the five and threeprime unspliced reads and boundary reads
+            # Boundary reads are taken into account as it's not certain if they're spliced/unspliced
             if spliced_length == 0:
                 fiveprime_unspliced = [t for t in intron_regions if
                                        read.reference_start < t[0] and read.reference_end > t[0]
@@ -115,59 +118,41 @@ start_positions = {}
 formatted_data=[]
 data=[]
 
-# # Loop through intron_dic and update the values
 for start, info in intron_dic.items():
-    unspliced_reads = info['fiveprime_unspliced'] + info['threeprime_unspliced']
-    uncat_reads = info['fiveprime_boundary'] + info['threeprime_boundary']
+    # Check if splice_support is greater than 3 before including in the analysis
+    if info['splice_support'] > 1:
+        unspliced_reads = info['fiveprime_unspliced'] + info['threeprime_unspliced']
+        uncat_reads = info['fiveprime_boundary'] + info['threeprime_boundary']
 
-    # Calculate splicing efficiencies for both 5' and 3' directions
-    splicing_efficiency_fiveprime = (info['splice_support'] / (
-            info['splice_support'] + (info['fiveprime_unspliced'] - info['fiveprime_boundary']))) * 100
-    splicing_efficiency_threeprime = (info['splice_support'] / (
-            info['splice_support'] + (info['threeprime_unspliced'] - info['threeprime_boundary']))) * 100
+        # Calculate splicing efficiencies for both 5' and 3' directions
+        splicing_efficiency_fiveprime = (info['splice_support'] / (
+                info['splice_support'] + (info['fiveprime_unspliced'] - info['fiveprime_boundary']))) * 100
+        splicing_efficiency_threeprime = (info['splice_support'] / (
+                info['splice_support'] + (info['threeprime_unspliced'] - info['threeprime_boundary']))) * 100
 
-    # Update the dictionary entry with rounded splicing efficiencies
-    info['splicing_efficiency_fiveprime'] = round(splicing_efficiency_fiveprime, 2)
-    info['splicing_efficiency_threeprime'] = round(splicing_efficiency_threeprime, 2)
+        # Update the dictionary entry with rounded splicing efficiencies
+        info['splicing_efficiency_fiveprime'] = round(splicing_efficiency_fiveprime, 2)
+        info['splicing_efficiency_threeprime'] = round(splicing_efficiency_threeprime, 2)
 
-    if start[0] not in start_positions:
-        start_positions[start[0]] = unspliced_reads
-    else:
-        start_positions[start[0]] += unspliced_reads
-    #
-    formatted_data.append((
-        start,
-        info['splice_support'],
-        info['fiveprime_unspliced'],
-        info['threeprime_unspliced'],
-        info['fiveprime_boundary'],
-        info['threeprime_boundary'],
-        info['splicing_efficiency_fiveprime'],
-        info['splicing_efficiency_threeprime']
-    ))
+        if start[0] not in start_positions:
+            start_positions[start[0]] = unspliced_reads
+        else:
+            start_positions[start[0]] += unspliced_reads
+        #
+        formatted_data.append((
+            start,
+            info['splice_support'],
+            info['fiveprime_unspliced'],
+            info['threeprime_unspliced'],
+            info['fiveprime_boundary'],
+            info['threeprime_boundary'],
+            info['splicing_efficiency_fiveprime'],
+            info['splicing_efficiency_threeprime']
+        ))
 #
 #
 splicing_efficiencies={}
-#
-# # # Open the CSV file for writing
-# output_csv_file = os.path.join(output_dir, f"{sample_name}.csv")
-# print("Constructed output_csv_file:", output_csv_file)
-# print("Sample name:", sample_name)
-# csv_file = open(output_csv_file, mode='w', newline='')
-# csv_writer = csv.writer(csv_file)
-# #
-# # # Write the header row
-# csv_writer.writerow(["Sample", "Intron", "5' Splice Eff", "3' Splice Eff"])
-# #
-# # # Write the data rows
-# for intron, efficiencies in splicing_efficiencies.items():
-#     csv_writer.writerow([sample_name, f"{intron[0]}-{intron[1]}", f"{efficiencies['5prime']}%", f"{efficiencies['3prime']}%"])
-#
-# # Close the CSV file
-# csv_file.close()
 
-# print(f"CSV file '{output_csv_file}' created.")
-# # Print formatted data using tabulate
 headers = [
     "Start",
     "Splice Support",
@@ -196,7 +181,11 @@ columns = [
 ]
 
 pd.options.mode.chained_assignment = None  # Suppress the warning
+
+# Create a dataframe of the values appended to the formatted_data output
 df = pd.DataFrame(formatted_data, columns=columns)
+
+# Create a second df copy for the 5prime analysis
 df5=df
 
 # Extract the 3' end positions from the "Start" column using .loc
@@ -219,6 +208,7 @@ grouped_5prime["Total Unspliced"] = grouped_5prime["5' Unspliced"] - grouped_5pr
 # print(grouped_5prime)
 
 # Filter out rows with the intron value (226, 3357)
+# There is an intron ending at 3360 which has the maximum values, don't need to count both
 df_filtered = df[df["Start"] != (226, 3357)].copy()  # Make a copy of the filtered DataFrame
 
 # Extract the 3' end positions from the "Start" column using .loc
@@ -285,3 +275,24 @@ total_splicing_efficiency = selected_data['Splicing Efficiency'].sum()
 print("Total Splicing Efficiency:", total_splicing_efficiency)
 
 
+
+
+# # # Open the CSV file for writing
+# output_csv_file = os.path.join(output_dir, f"{sample_name}.csv")
+# print("Constructed output_csv_file:", output_csv_file)
+# print("Sample name:", sample_name)
+# csv_file = open(output_csv_file, mode='w', newline='')
+# csv_writer = csv.writer(csv_file)
+# #
+# # # Write the header row
+# csv_writer.writerow(["Sample", "Intron", "5' Splice Eff", "3' Splice Eff"])
+# #
+# # # Write the data rows
+# for intron, efficiencies in splicing_efficiencies.items():
+#     csv_writer.writerow([sample_name, f"{intron[0]}-{intron[1]}", f"{efficiencies['5prime']}%", f"{efficiencies['3prime']}%"])
+#
+# # Close the CSV file
+# csv_file.close()
+
+# print(f"CSV file '{output_csv_file}' created.")
+# # Print formatted data using tabulate
