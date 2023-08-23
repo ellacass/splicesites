@@ -100,7 +100,7 @@ def calculate_splicing_efficiency(bam_file):
 bam_file = argv[1]  # Example BAM file name
 output_dir = "/homes/biertank/ella/ref_genomes/all_genomes/splice/csv_splice"
 intron_dic, splice_support, non_splice_support, total_reads = calculate_splicing_efficiency(bam_file)
-sample_name = os.path.basename(bam_file).split("_")[1].split("-")[0]
+# sample_name = os.path.basename(bam_file).split("_")[1].split("-")[0]
 
 
 
@@ -149,24 +149,24 @@ for start, info in intron_dic.items():
 #
 splicing_efficiencies={}
 #
-# # Open the CSV file for writing
-output_csv_file = os.path.join(output_dir, f"{sample_name}.csv")
-print("Constructed output_csv_file:", output_csv_file)
-print("Sample name:", sample_name)
-csv_file = open(output_csv_file, mode='w', newline='')
-csv_writer = csv.writer(csv_file)
+# # # Open the CSV file for writing
+# output_csv_file = os.path.join(output_dir, f"{sample_name}.csv")
+# print("Constructed output_csv_file:", output_csv_file)
+# print("Sample name:", sample_name)
+# csv_file = open(output_csv_file, mode='w', newline='')
+# csv_writer = csv.writer(csv_file)
+# #
+# # # Write the header row
+# csv_writer.writerow(["Sample", "Intron", "5' Splice Eff", "3' Splice Eff"])
+# #
+# # # Write the data rows
+# for intron, efficiencies in splicing_efficiencies.items():
+#     csv_writer.writerow([sample_name, f"{intron[0]}-{intron[1]}", f"{efficiencies['5prime']}%", f"{efficiencies['3prime']}%"])
 #
-# # Write the header row
-csv_writer.writerow(["Sample", "Intron", "5' Splice Eff", "3' Splice Eff"])
-#
-# # Write the data rows
-for intron, efficiencies in splicing_efficiencies.items():
-    csv_writer.writerow([sample_name, f"{intron[0]}-{intron[1]}", f"{efficiencies['5prime']}%", f"{efficiencies['3prime']}%"])
+# # Close the CSV file
+# csv_file.close()
 
-# Close the CSV file
-csv_file.close()
-
-print(f"CSV file '{output_csv_file}' created.")
+# print(f"CSV file '{output_csv_file}' created.")
 # # Print formatted data using tabulate
 headers = [
     "Start",
@@ -195,7 +195,7 @@ columns = [
     "3' Splicing Efficiency (%)"
 ]
 
-
+pd.options.mode.chained_assignment = None  # Suppress the warning
 df = pd.DataFrame(formatted_data, columns=columns)
 df5=df
 
@@ -283,3 +283,5 @@ print(selected_data)
 total_splicing_efficiency = selected_data['Splicing Efficiency'].sum()
 # Print the total splicing efficiency
 print("Total Splicing Efficiency:", total_splicing_efficiency)
+
+
