@@ -212,7 +212,7 @@ def calculate_splicing_efficiency(bam_file):
         combined_denominator = total_splice_support + total_unspliced
         # print("Combined Denominator:", combined_denominator)
 
-        # Calculate and update the splicing efficiency for each row in the DataFrame
+        # Calculate and update the spclearlicing efficiency for each row in the DataFrame
         df['Splicing Efficiency'] = df['Splice Support'] / combined_denominator
 
         # Select the desired columns from the DataFrame
