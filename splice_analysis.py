@@ -1,3 +1,4 @@
+
 import pysam
 from sys import argv
 from tabulate import tabulate
@@ -285,19 +286,8 @@ def calculate_splicing_efficiency(bam_file):
         combined_data
     )
 
-# Check if the correct number of command-line arguments are provided
-
-parser = argparse.ArgumentParser(description="Splice Analysis Tool")
-parser.add_argument("-i", "--input-dir", required=True, help="Directory containing BAM files")
-parser.add_argument("-o", "--output-dir", required=True, help="Directory to save output CSV files")
-parser.add_argument("-e", "--extension", required=True, help="BAM file extension")
-parser.add_argument("-s", "--sample-name", action="store_true", help="Use only sample name from BAM file name. \
-When 's' is not specified in commandline program parses redundant information from my sample names. When 's' is \
-specified then it will use the entire bam_file name as the column names in the output")
-args = parser.parse_args()
-
 # Define the input directory for BAM files
-bam_files_directory = args.input_dir
+bam_files_directory = "/homes/biertank/ella/ref_genomes/all_genomes/alignment_output_3/bamfiles/hpv16_bam"
 # Get a list of BAM files in the specified directory
 bam_files = [f for f in os.listdir(bam_files_directory) if f.endswith(".bam")]
 
@@ -308,11 +298,10 @@ total_files = len(bam_files)
 # Iterate through each BAM file
 with tqdm(total=total_files, desc="Processing BAM files", bar_format="{desc} {bar}") as pbar:
     for bam_file in bam_files:
-        for bam_file in bam_files:
-            if args.sample_name:
-                sample_name = os.path.basename(bam_file)
-            else:
-                sample_name = os.path.basename(bam_file).split("_")[1].split("-")[0]
+        sample_name = os.path.basename(bam_file).split("_")[1].split("-")[0]
+
+        print("Processing:", bam_file)
+        print("Sample Name:", sample_name)
 
         full_bam_file = os.path.join(bam_files_directory, bam_file)
 
@@ -338,16 +327,13 @@ with tqdm(total=total_files, desc="Processing BAM files", bar_format="{desc} {ba
 
 # Convert the all_splicing_data dictionary to a DataFrame
 all_splicing_df = pd.DataFrame(all_splicing_data)
-# Define the output CSV file path using the provided output directory and file name
-output_csv_file = os.path.join(args.output_dir, "all_splicing_data.csv")
 # Transpose the DataFrame to switch rows and columns
 transposed_df = all_splicing_df.transpose()
 # Rename the index column to "Splice_events"
 transposed_df.index.name = "Splice_events"
 # Save the transposed DataFrame to a CSV file
+output_csv_file = "/homes/biertank/ella/ref_genomes/all_genomes/alignment_output_3/bamfiles/hpv16_bam/all_splicing_data.csv"
 transposed_df.to_csv(output_csv_file)
-
-
 
 # Define the completion message with science-based emojis
 completion_message = "Your initial splice site analysis is complete (Yeeeehaw)! You can find the .csv file in your output directory"
@@ -355,7 +341,3 @@ emojis = "🎉🎉🎉🎉"
 # Print the completion message in green with emojis on both sides
 completed_message = f"{emojis} {Fore.GREEN}{completion_message}{Style.RESET_ALL} {emojis}"
 print(completed_message)
-
-
-
-
